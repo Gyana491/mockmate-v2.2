@@ -15,34 +15,8 @@ const MockmateRobot = ({ isSpeaking, currentText, onUserResponse }) => {
   const recognizerRef = useRef(null);
   const t = useRef(0);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
-  const [robotSize, setRobotSize] = useState(120);
-  
-  // Calculate responsive robot size
-  const calculateResponsiveSize = () => {
-    if (typeof window === 'undefined') return 120; // SSR fallback
-    
-    const viewportWidth = window.innerWidth;
-    if (viewportWidth < 640) {
-      return Math.max(80, Math.min(100, viewportWidth * 0.2));
-    } else if (viewportWidth < 1024) {
-      return Math.max(100, Math.min(120, viewportWidth * 0.12));
-    } else {
-      return 120;
-    }
-  };
 
   useEffect(() => {
-    // Set robot size based on screen size
-    const handleResize = () => {
-      setRobotSize(calculateResponsiveSize());
-    };
-    
-    // Initial size calculation
-    handleResize();
-    
-    // Set up resize listener
-    window.addEventListener('resize', handleResize);
-    
     const mouthPath = mouthRef.current;
     const leftEye = leftEyeRef.current;
     const rightEye = rightEyeRef.current;
@@ -227,105 +201,44 @@ const MockmateRobot = ({ isSpeaking, currentText, onUserResponse }) => {
       if (window.speechSynthesis) {
         window.speechSynthesis.cancel();
       }
-      window.removeEventListener('resize', handleResize);
     };
   }, [isSpeaking, currentText, onUserResponse, voiceEnabled]);
-
-  const handleReread = () => {
-    if (currentText && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-      speakText(currentText, {
-        onStart: () => console.log("Re-reading text"),
-        onEnd: () => console.log("Re-reading complete"),
-      });
-    }
-  };
-
-  const toggleVoice = () => {
-    if (window.speechSynthesis && window.speechSynthesis.speaking) {
-      window.speechSynthesis.cancel();
-    }
-    setVoiceEnabled(!voiceEnabled);
-  };
 
   return (
     <div className="relative">
       <div className="flex flex-col items-center relative">
         <div 
-          className={`rounded-full bg-blue-500 relative flex justify-center shadow-md transition-transform duration-300 ease-in-out ${
+          className={`w-[120px] h-[120px] rounded-full bg-blue-500 relative flex justify-center shadow-md transition-transform duration-300 ease-in-out ${
             isSpeaking ? "animate-subtle-bounce" : ""
           }`} 
           ref={emojiRef}
-          style={{
-            width: `${robotSize}px`,
-            height: `${robotSize}px`
-          }}
         >
-          <div 
-            className="relative bg-white rounded-full absolute transition-all duration-100 ease-in-out flex items-center justify-center" 
-            ref={leftEyeRef}
-            style={{
-              width: `${robotSize * 0.17}px`,
-              height: `${robotSize * 0.17}px`,
-              top: `${robotSize * 0.29}px`,
-              left: `${robotSize * 0.25}px`
-            }}
-          >
-            <div 
-              className="absolute bg-black rounded-full"
-              style={{
-                width: `${robotSize * 0.08}px`,
-                height: `${robotSize * 0.08}px`
-              }}
-            ></div>
+          <div className="relative w-[20px] h-[20px] bg-white rounded-full absolute top-[35px] left-[30px] transition-all duration-100 ease-in-out flex items-center justify-center" ref={leftEyeRef}>
+            <div className="absolute w-[10px] h-[10px] bg-black rounded-full"></div>
           </div>
-          <div 
-            className="relative bg-white rounded-full absolute transition-all duration-100 ease-in-out flex items-center justify-center" 
-            ref={rightEyeRef}
-            style={{
-              width: `${robotSize * 0.17}px`,
-              height: `${robotSize * 0.17}px`,
-              top: `${robotSize * 0.29}px`,
-              right: `${robotSize * 0.25}px`
-            }}
-          >
-            <div 
-              className="absolute bg-black rounded-full"
-              style={{
-                width: `${robotSize * 0.08}px`,
-                height: `${robotSize * 0.08}px`
-              }}
-            ></div>
+          <div className="relative w-[20px] h-[20px] bg-white rounded-full absolute top-[35px] right-[30px] transition-all duration-100 ease-in-out flex items-center justify-center" ref={rightEyeRef}>
+            <div className="absolute w-[10px] h-[10px] bg-black rounded-full"></div>
           </div>
           <svg 
-            className="absolute stroke-white stroke-[3] fill-none" 
+            className="w-[60px] h-[20px] absolute bottom-[30px] stroke-white stroke-[3] fill-none" 
             viewBox="0 0 100 20"
-            style={{
-              width: `${robotSize * 0.5}px`,
-              height: `${robotSize * 0.17}px`,
-              bottom: `${robotSize * 0.25}px`
-            }}
           >
             <path ref={mouthRef} d="M0 10 L100 10" />
           </svg>
         </div>
-        <div className="mt-2 sm:mt-3 font-semibold text-sm sm:text-base text-blue-500">MockMate AI</div>
+        <div className="mt-3 font-semibold text-blue-500">MockMate AI</div>
         {currentText && <div className="hidden">{currentText}</div>}
 
         <div className="flex mt-2 gap-2">
           <button
-            className={`rounded-full flex items-center justify-center cursor-pointer transition-all duration-200 shadow-sm border ${
+            className={`w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-all duration-200 shadow-sm border ${
               voiceEnabled 
                 ? "text-blue-500 border-blue-500 bg-blue-50 dark:bg-blue-900 dark:border-blue-500 dark:text-blue-300" 
                 : "text-gray-500 border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300"
             } hover:bg-gray-100 hover:-translate-y-0.5 hover:shadow dark:hover:bg-gray-700`}
-            onClick={toggleVoice}
+            onClick={() => setVoiceEnabled(!voiceEnabled)}
             title={voiceEnabled ? "Turn voice off" : "Turn voice on"}
             aria-label={voiceEnabled ? "Turn voice off" : "Turn voice on"}
-            style={{
-              width: `${Math.max(32, robotSize * 0.25)}px`,
-              height: `${Math.max(32, robotSize * 0.25)}px`
-            }}
           >
             {voiceEnabled ? (
               <svg
@@ -362,15 +275,19 @@ const MockmateRobot = ({ isSpeaking, currentText, onUserResponse }) => {
           </button>
 
           <button
-            className="rounded-full flex items-center justify-center cursor-pointer transition-all duration-200 shadow-sm border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 hover:-translate-y-0.5 hover:shadow dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
-            onClick={handleReread}
+            className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-all duration-200 shadow-sm border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 hover:-translate-y-0.5 hover:shadow dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
+            onClick={() => {
+              if (currentText && window.speechSynthesis) {
+                window.speechSynthesis.cancel();
+                speakText(currentText, {
+                  onStart: () => console.log("Re-reading text"),
+                  onEnd: () => console.log("Re-reading complete"),
+                });
+              }
+            }}
             disabled={!voiceEnabled || !currentText}
             title="Re-read text"
             aria-label="Re-read text"
-            style={{
-              width: `${Math.max(32, robotSize * 0.25)}px`,
-              height: `${Math.max(32, robotSize * 0.25)}px`
-            }}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
