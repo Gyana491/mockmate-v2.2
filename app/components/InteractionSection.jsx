@@ -326,7 +326,7 @@ export default function InteractionSection({
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
                   >
-                    <p>You'll be asked {totalQuestions} {difficultyLevel}-level technical interview questions. Answer verbally or type your responses.</p>
+                    <p>You&apos;ll be asked {totalQuestions} {difficultyLevel}-level technical interview questions. Answer verbally or type your responses.</p>
                   </motion.div>
                 )}
               </motion.div>

@@ -204,6 +204,23 @@ const MockmateRobot = ({ isSpeaking, currentText, onUserResponse }) => {
     };
   }, [isSpeaking, currentText, onUserResponse, voiceEnabled]);
 
+  const handleReread = () => {
+    if (currentText && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      speakText(currentText, {
+        onStart: () => console.log("Re-reading text"),
+        onEnd: () => console.log("Re-reading complete"),
+      });
+    }
+  };
+
+  const toggleVoice = () => {
+    if (window.speechSynthesis && window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel();
+    }
+    setVoiceEnabled(!voiceEnabled);
+  };
+
   return (
     <div className="relative">
       <div className="flex flex-col items-center relative">
@@ -236,7 +253,7 @@ const MockmateRobot = ({ isSpeaking, currentText, onUserResponse }) => {
                 ? "text-blue-500 border-blue-500 bg-blue-50 dark:bg-blue-900 dark:border-blue-500 dark:text-blue-300" 
                 : "text-gray-500 border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300"
             } hover:bg-gray-100 hover:-translate-y-0.5 hover:shadow dark:hover:bg-gray-700`}
-            onClick={() => setVoiceEnabled(!voiceEnabled)}
+            onClick={toggleVoice}
             title={voiceEnabled ? "Turn voice off" : "Turn voice on"}
             aria-label={voiceEnabled ? "Turn voice off" : "Turn voice on"}
           >
@@ -276,15 +293,7 @@ const MockmateRobot = ({ isSpeaking, currentText, onUserResponse }) => {
 
           <button
             className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-all duration-200 shadow-sm border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 hover:-translate-y-0.5 hover:shadow dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
-            onClick={() => {
-              if (currentText && window.speechSynthesis) {
-                window.speechSynthesis.cancel();
-                speakText(currentText, {
-                  onStart: () => console.log("Re-reading text"),
-                  onEnd: () => console.log("Re-reading complete"),
-                });
-              }
-            }}
+            onClick={handleReread}
             disabled={!voiceEnabled || !currentText}
             title="Re-read text"
             aria-label="Re-read text"

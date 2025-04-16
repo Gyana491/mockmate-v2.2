@@ -84,7 +84,7 @@ export default function EvaluationContent({
           variants={fadeIn}
         >
           Based on your responses to {totalQuestions} {difficultyLevel}-level questions, 
-          we've analyzed your performance and prepared detailed feedback to help you improve.
+          we&apos;ve analyzed your performance and prepared detailed feedback to help you improve.
         </motion.p>
       </motion.div>
       

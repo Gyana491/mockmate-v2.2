@@ -196,7 +196,8 @@ export default function InterviewPanel({ skillParam, difficultyParam = "intermed
     evaluation,
     apiError,
     isRobotSpeaking,
-  ]); // Add dependencies
+    getRobotSpeechContent, // Added missing dependency
+  ]);
 
   // Display the current question
   const displayCurrentQuestion = () => {
@@ -238,7 +239,7 @@ export default function InterviewPanel({ skillParam, difficultyParam = "intermed
     ) {
       displayCurrentQuestion();
     }
-  }, [currentQuestionIndex, currentStage, allQuestions]); // Ensure allQuestions is a dependency
+  }, [currentQuestionIndex, currentStage, allQuestions, displayCurrentQuestion]); // Now correctly includes displayCurrentQuestion
 
   const handleAnswer = async (transcribedText) => {
     setLiveTranscription(transcribedText);
@@ -476,7 +477,7 @@ export default function InterviewPanel({ skillParam, difficultyParam = "intermed
       // Do NOT set robotSpeaking true here - wait for user interaction
       setContinueButtonVisible(true); // Make the start button visible immediately
     }
-  }, []); // Keep dependency array minimal for initialization
+  }, [currentStage]); // Now correctly includes currentStage
 
   return (
     <div className="max-w-5xl mx-auto p-4">
