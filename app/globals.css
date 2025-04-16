@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Premium Card Effects */
+.premium-card {
+  @apply bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300;
+  transform: translateY(0);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.premium-card:hover {
+  @apply shadow-2xl;
+  transform: translateY(-5px);
+}
+
+/* Smooth Scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Glass Morphism Effects */
+.glass-effect {
+  @apply bg-white/70 dark:bg-gray-800/70 backdrop-blur-md border border-white/20 dark:border-gray-700/20;
+}
+
+/* Premium Gradients */
+.premium-gradient-indigo {
+  @apply bg-gradient-to-r from-indigo-600 to-indigo-700;
+}
+
+.premium-gradient-text {
+  @apply bg-gradient-to-r from-indigo-600 to-indigo-800 dark:from-indigo-400 dark:to-indigo-300 bg-clip-text text-transparent;
+}
+
+/* Card Animation Keyframes */
+@keyframes cardEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(25px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card-entrance {
+  animation: cardEntrance 0.5s ease-out forwards;
+}
+
+/* Print Styles - For PDF export */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-only {
+    display: block !important;
+  }
+  
+  .premium-card {
+    box-shadow: none !important;
+    border: 1px solid #e5e5e5 !important;
+    break-inside: avoid !important;
+    margin-bottom: 1rem !important;
+  }
+}
