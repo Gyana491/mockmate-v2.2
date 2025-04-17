@@ -1,28 +1,49 @@
-# MockMate - AI-Powered Technical Interview Practice
+# MockMate - Premium AI-Powered Interview Practice Platform
 
-MockMate is an interactive technical interview practice platform powered by AI that helps developers prepare for technical interviews through realistic conversation-based practice sessions.Sharpen your interview skills, prepare with AI-powered practice. and Evaluate  your skills
-Any Skill, Any Difficulty
+MockMate is your ultimate AI-powered interview preparation companion, offering both free and premium mock interviews for technical, behavioral, and company-specific scenarios. Practice with our advanced AI to master your interview skills and land your dream job.
 
-Please Give It a try:
-[https://mock-mate-v2.netlify.app/](https://https://mock-mate-v2.netlify.app/)
+🌟 Try our basic features for free:
+[https://mock-mate-v2.netlify.app/](https://mock-mate-v2.netlify.app/)
 
-Completely free, no login required
-(Use your desktop with a headphone for better experience)
+(Recommended: Use desktop with headphones for the best experience)
 
-By: Team CodeMonk
-Connect with me: [https://www.linkedin.com/in/mr-gyan491/](https://www.linkedin.com/in/mr-gyan491/)
+By: Team CodeMonk
+[Connect with me on LinkedIn](https://www.linkedin.com/in/mr-gyan491/)
 
-![1744881748278](images/README/1744881748278.png)
+![Platform Preview](images/README/1744881748278.png)
 
+## 🎯 Features
 
-## Features
+### Free Features
+- 🎯 Basic technical interview practice
+- 🔄 Three difficulty levels (Basic, Intermediate, Advanced)
+- 🎙️ Voice interaction with AI
+- 📊 Basic performance feedback
+- 🌗 Dark/Light mode support
 
-- 🎯 **Skill-Based Practice**: Choose from popular programming languages and technologies
-- 🔄 **Dynamic Difficulty Levels**: Basic, Intermediate, Advanced, or Mixed question sets
-- 🎙️ **Voice Interaction**: Natural conversation with speech recognition and synthesis
-- 📊 **Real-Time Feedback**: Immediate analysis and scoring of your responses
-- 🤖 **AI-Powered Evaluation**: Detailed feedback on strengths and areas for improvement
-- 🌗 **Dark Mode Support**: Comfortable practice experience in any lighting condition
+### ⭐ Premium Features
+- 🏢 Company-specific interview preparation
+  - Google (Technical & Behavioral)
+  - Amazon (Leadership Principles)
+  - Meta (System Design)
+  - Microsoft (Coding & Architecture)
+  - And more!
+- 🌟 Advanced features:
+  - 💡 Personalized learning paths
+  - 📈 Detailed performance analytics
+  - 🎯 Custom interview scenarios
+  - 💾 Interview session recordings
+  - 📋 Progress tracking
+  - 🤝 Mock behavioral interviews
+  - 🏗️ System design interviews
+  - 📚 Company-specific question banks
+
+## 🎯 Target Users
+- 👨‍💻 Software Engineers
+- 🎓 Students & Fresh Graduates
+- 💼 Experienced Professionals
+- 🔄 Career Switchers
+- 🌟 Aspiring FAANG/MANGA Candidates
 
 ## Getting Started
 
@@ -77,7 +98,6 @@ npm run dev
 
 ## Environment Variables
 
-
 | Variable                     | Description                     |
 | ---------------------------- | ------------------------------- |
 | `NEXT_PUBLIC_GEMINI_API_KEY` | Your Google AI (Gemini) API key |
@@ -98,6 +118,36 @@ npm run dev
 - Intermediate: Practical implementation scenarios
 - Advanced: Complex system design and architecture
 - Mixed: Combination of difficulty levels
+
+## 🌟 Premium Interview Types
+
+### Technical Interviews
+- Data Structures & Algorithms
+- System Design & Architecture
+- Language-specific (Java, Python, JavaScript, etc.)
+- Full Stack Development
+- Cloud & DevOps
+
+### Behavioral Interviews
+- Leadership & Management
+- Problem-solving
+- Team Collaboration
+- Project Management
+- Conflict Resolution
+
+### Company-Specific Tracks
+- Google Technical Rounds
+- Amazon Leadership Principles
+- Meta System Design
+- Microsoft Coding Standards
+- Apple Innovation Focus
+
+### Specialized Interviews
+- Product Management
+- Data Science
+- Machine Learning
+- Cybersecurity
+- Cloud Architecture
 
 ## Contributing
 

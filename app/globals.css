@@ -20,48 +20,63 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+/* Accessibility Improvements */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
-/* Premium Card Effects */
-.premium-card {
-  @apply bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300;
-  transform: translateY(0);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+.focus-ring:focus {
+  @apply outline-none ring-2 ring-blue-500 ring-offset-2 ring-offset-white dark:ring-offset-gray-900;
 }
 
-.premium-card:hover {
-  @apply shadow-2xl;
+/* Card and Button Styles */
+.card {
+  @apply bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 transition-all duration-300;
+}
+
+.card:hover {
+  @apply shadow-xl;
   transform: translateY(-5px);
 }
 
-/* Smooth Scrolling */
-html {
-  scroll-behavior: smooth;
+.button {
+  @apply px-4 py-2 rounded-lg font-medium transition-colors;
 }
 
-/* Glass Morphism Effects */
-.glass-effect {
-  @apply bg-white/70 dark:bg-gray-800/70 backdrop-blur-md border border-white/20 dark:border-gray-700/20;
+.button-primary {
+  @apply bg-blue-600 hover:bg-blue-700 text-white;
 }
 
-/* Premium Gradients */
-.premium-gradient-indigo {
-  @apply bg-gradient-to-r from-indigo-600 to-indigo-700;
+.button-secondary {
+  @apply bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200;
 }
 
-.premium-gradient-text {
-  @apply bg-gradient-to-r from-indigo-600 to-indigo-800 dark:from-indigo-400 dark:to-indigo-300 bg-clip-text text-transparent;
+/* Input Styles */
+.input {
+  @apply w-full px-4 py-3.5 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm;
+  @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+  @apply dark:bg-gray-700 dark:text-white dark:placeholder-gray-400;
 }
 
-/* Card Animation Keyframes */
-@keyframes cardEntrance {
+/* Section Styles */
+.section {
+  @apply mb-12;
+}
+
+.section-title {
+  @apply text-2xl font-bold text-gray-800 dark:text-white mb-6;
+}
+
+/* Animation (with reduced motion support) */
+@keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(25px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -69,29 +84,26 @@ html {
   }
 }
 
-.card-entrance {
-  animation: cardEntrance 0.5s ease-out forwards;
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
 }
 
-/* Print Styles - For PDF export */
-@media print {
-  body {
-    background: white !important;
-    color: black !important;
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in {
+    animation: none;
   }
-  
-  .no-print {
-    display: none !important;
+}
+
+/* High Contrast Mode Support */
+@media (forced-colors: active) {
+  .button,
+  .card,
+  .input {
+    border: 2px solid currentColor;
   }
-  
-  .print-only {
-    display: block !important;
-  }
-  
-  .premium-card {
-    box-shadow: none !important;
-    border: 1px solid #e5e5e5 !important;
-    break-inside: avoid !important;
-    margin-bottom: 1rem !important;
-  }
+}
+
+/* Screen Reader Only */
+.sr-only {
+  @apply absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0;
 }
