@@ -6,10 +6,10 @@ Any Skill, Any Difficulty
 Please Give It a try:
 [https://mock-mate-v2.netlify.app/](https://https://mock-mate-v2.netlify.app/)
 Completely free, no login required
-
 (Use your desktop with a headphone for better experience)
 
 By: Team CodeMonk
+Connect with me: [https://www.linkedin.com/in/mr-gyan491/](https://www.linkedin.com/in/mr-gyan491/)
 
 ![1744881748278](images/README/1744881748278.png)
 
@@ -101,3 +101,5 @@ npm run dev
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+Connect with me: [https://www.linkedin.com/in/mr-gyan491/](https://www.linkedin.com/in/mr-gyan491/)
