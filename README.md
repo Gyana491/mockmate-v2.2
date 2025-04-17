@@ -119,7 +119,7 @@ npm run dev
 - Advanced: Complex system design and architecture
 - Mixed: Combination of difficulty levels
 
-## 🌟 Premium Interview Types
+## Types Of Interviews You Can practice
 
 ### Technical Interviews
 - Data Structures & Algorithms
