@@ -223,28 +223,23 @@ export default function VoiceRecorder({
       },
       onEnd: () => {
         console.log("Speech recognition ended.");
-        // Only truly stop if isRecording is false (meaning stopRecording was called)
-        if (!isRecording) {
-          setIsProcessing(false);
-          stopRecordingTimer();
-          // Call onStop with the accumulated final transcript
-          onStop(finalTranscriptRef.current || interimTranscript); // Use interim as fallback if final is empty
-          cleanupAudioVisualizer(); // Cleanup here after fully stopped
-        } else {
-           // If it ended unexpectedly while still recording, try restarting
-           console.warn('Speech recognition ended unexpectedly while recording. Restarting...');
-           if (recognitionRef.current) {
-             try {
-               recognitionRef.current.start();
-             } catch (e) {
-               console.error("Error restarting recognition:", e);
-               setIsRecording(false);
-               setIsProcessing(false);
-               stopRecordingTimer();
-               cleanupAudioVisualizer();
-             }
-           }
+        // Only process if we haven't already handled it in stopRecording
+        if (isRecording) {
+          // If it ended unexpectedly while still recording, try restarting
+          console.warn('Speech recognition ended unexpectedly while recording. Restarting...');
+          if (recognitionRef.current) {
+            try {
+              recognitionRef.current.start();
+            } catch (e) {
+              console.error("Error restarting recognition:", e);
+              setIsRecording(false);
+              setIsProcessing(false);
+              stopRecordingTimer();
+              cleanupAudioVisualizer();
+            }
+          }
         }
+        // No need to do anything if recognition ended because we stopped it manually
       },
       onError: (error) => {
         console.error("Speech recognition error:", error);
@@ -284,24 +279,26 @@ export default function VoiceRecorder({
     if (!isRecording) return;
 
     setIsRecording(false);
-    setIsProcessing(true);
-
+    
+    // Capture the current transcript
+    const currentTranscript = finalTranscriptRef.current || interimTranscript;
+    
+    // Stop the recognition
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop(); 
       } catch (e) {
         console.error("Error stopping speech recognition:", e);
-        setIsProcessing(false);
-        stopRecordingTimer();
-        cleanupAudioVisualizer();
-        onStop(finalTranscriptRef.current || interimTranscript);
       }
-    } else {
-       setIsProcessing(false);
-       stopRecordingTimer();
-       cleanupAudioVisualizer();
-       onStop(finalTranscriptRef.current || interimTranscript);
     }
+    
+    // Immediately set processing to false (don't wait for onEnd callback)
+    setIsProcessing(false);
+    stopRecordingTimer();
+    cleanupAudioVisualizer();
+    
+    // Send the transcript back to parent component
+    onStop(currentTranscript);
   };
 
   return (
