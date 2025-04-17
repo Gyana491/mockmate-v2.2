@@ -222,6 +222,10 @@ export default function InterviewPanel({ skillParam, difficultyParam = "intermed
           setQuestionFeedback(null);
           setLiveTranscription("");
           
+          // IMPORTANT: Don't set robotSpeaking to true here
+          // Let the displayCurrentQuestionEffect handle speech
+          // This prevents the double speaking issue
+          
           // The displayCurrentQuestion effect will handle showing the question
         } else {
           // If no questions were fetched or there was an error, show error and continue button
@@ -292,64 +296,6 @@ export default function InterviewPanel({ skillParam, difficultyParam = "intermed
     }
   };
 
-  // Modify displayCurrentQuestion to ensure a clean slate for each question
-  const displayCurrentQuestion = () => {
-    if (allQuestions.length === 0 || currentQuestionIndex >= allQuestions.length) {
-      return;
-    }
-
-    // Cancel any ongoing speech first
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
-    setIsRobotSpeaking(false);
-    
-    // Reset all question-related states
-    setRobotSpeaking(true);
-    setCurrentStage("question");
-    setWaitingForUserAction(false);
-    setQuestionFeedback(null);
-    setContinueButtonVisible(false);
-    
-    // Important: Clear the input for the new question
-    setLiveTranscription("");
-    setIsAnswerSubmitted(false);
-    setIsAnswerProcessing(false);
-
-    // Get the current question
-    const currentQuestionText = allQuestions[currentQuestionIndex].question;
-    setQuestion(currentQuestionText);
-
-    // Add this question to the interview history
-    setInterviewHistory((prev) => [
-      ...prev,
-      { type: "question", content: currentQuestionText, index: currentQuestionIndex + 1 },
-    ]);
-  };
-
-  // Ensure we properly refresh the UI when currentQuestionIndex changes
-  useEffect(() => {
-    if (
-      currentStage === "question" &&
-      allQuestions.length > 0 &&
-      currentQuestionIndex < allQuestions.length
-    ) {
-      displayCurrentQuestion();
-    }
-  }, [currentQuestionIndex, allQuestions]); // Respond to question index changes
-  
-  // Add this effect to ensure user controls are properly reset for each question
-  useEffect(() => {
-    if (currentStage === "question" && !waitingForUserAction && !isRobotSpeaking) {
-      // Safety timer to ensure user controls appear if speech ends without triggering onEnd
-      const safetyTimer = setTimeout(() => {
-        setWaitingForUserAction(true);
-      }, 8000); // 8 seconds should be enough for most question readings
-      
-      return () => clearTimeout(safetyTimer);
-    }
-  }, [currentStage, waitingForUserAction, isRobotSpeaking]);
-
   // Fix the displayCurrentQuestion function to prevent repeated questions
   const displayCurrentQuestionEffect = useEffect(() => {
     if (currentStage === "question" && 
@@ -379,8 +325,10 @@ export default function InterviewPanel({ skillParam, difficultyParam = "intermed
         return prev;
       });
       
-      // Set robot speaking to true to trigger the useEffect hook for TTS
-      setRobotSpeaking(true);
+      // Add a small delay before triggering speech to ensure state transitions are complete
+      const speechDelay = setTimeout(() => {
+        setRobotSpeaking(true);
+      }, 100);
       
       // Safety timeout to ensure user controls appear if speech fails to end properly
       const fallbackTimer = setTimeout(() => {
@@ -390,7 +338,10 @@ export default function InterviewPanel({ skillParam, difficultyParam = "intermed
         }
       }, 10000); // 10 second fallback
       
-      return () => clearTimeout(fallbackTimer);
+      return () => {
+        clearTimeout(fallbackTimer);
+        clearTimeout(speechDelay);
+      };
     }
   }, [currentStage, currentQuestionIndex, allQuestions, waitingForUserAction]);
 

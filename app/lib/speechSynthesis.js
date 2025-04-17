@@ -45,9 +45,13 @@ export function speakText(text, callbacks) {
   try {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-US';
-    utterance.rate = 1;
+    utterance.rate = 0.95; // Slightly slower rate for better comprehension
     utterance.pitch = 1;
     utterance.volume = 1; // Ensure volume is at maximum
+
+    // Split long text into manageable chunks to prevent cutting off
+    const textChunks = splitTextIntoChunks(text, 150);
+    let currentChunkIndex = 0;
 
     // Get available voices
     let voices = window.speechSynthesis.getVoices();
@@ -55,7 +59,7 @@ export function speakText(text, callbacks) {
     // If voices aren't loaded yet, wait for them
     if (voices.length === 0) {
       let voicesAttempts = 0;
-      const maxVoiceAttempts = 3;
+      const maxVoiceAttempts = 5; // Increased from 3 to 5 for more attempts
       
       const voicesLoadedCallback = () => {
         voices = window.speechSynthesis.getVoices();
@@ -78,6 +82,84 @@ export function speakText(text, callbacks) {
       voicesLoadedCallback();
     } else {
       setVoiceAndSpeak(utterance);
+    }
+
+    function splitTextIntoChunks(text, maxChunkLength) {
+      const sentences = text.split(/(?<=[.!?])\s+/);
+      const chunks = [];
+      let currentChunk = '';
+      
+      for (const sentence of sentences) {
+        if (currentChunk.length + sentence.length <= maxChunkLength) {
+          currentChunk += (currentChunk ? ' ' : '') + sentence;
+        } else {
+          if (currentChunk) chunks.push(currentChunk);
+          currentChunk = sentence;
+        }
+      }
+      
+      if (currentChunk) chunks.push(currentChunk);
+      return chunks.length ? chunks : [text];
+    }
+
+    function speakNextChunk() {
+      if (currentChunkIndex < textChunks.length) {
+        const chunkUtterance = new SpeechSynthesisUtterance(textChunks[currentChunkIndex]);
+        chunkUtterance.lang = utterance.lang;
+        chunkUtterance.rate = utterance.rate;
+        chunkUtterance.pitch = utterance.pitch;
+        chunkUtterance.volume = utterance.volume;
+        chunkUtterance.voice = utterance.voice;
+        
+        chunkUtterance.onend = () => {
+          currentChunkIndex++;
+          if (currentChunkIndex < textChunks.length) {
+            setTimeout(speakNextChunk, 100); // Small pause between chunks
+          } else {
+            safeOnEnd({type: 'natural'});
+          }
+        };
+        
+        chunkUtterance.onerror = (event) => {
+          console.error('Chunk speech error:', event);
+          // Try to continue with next chunk if possible
+          currentChunkIndex++;
+          if (currentChunkIndex < textChunks.length) {
+            setTimeout(speakNextChunk, 100);
+          } else {
+            if (callbacks && callbacks.onError) {
+              callbacks.onError({
+                type: event.error || 'unknown',
+                message: 'Chunk speech synthesis failed',
+                originalEvent: event
+              });
+            }
+            safeOnEnd({type: 'error'});
+          }
+        };
+        
+        window.speechSynthesis.speak(chunkUtterance);
+        
+        // Apply the resume hack for this chunk too
+        let attempts = 0;
+        const resumeInterval = setInterval(() => {
+          if (window.speechSynthesis.speaking) {
+            attempts++;
+            if (attempts > 10) { // Allow more attempts
+              clearInterval(resumeInterval);
+              return;
+            }
+            try {
+              window.speechSynthesis.pause();
+              window.speechSynthesis.resume();
+            } catch (e) {
+              console.error("Error during chunk speech resume:", e);
+            }
+          } else {
+            clearInterval(resumeInterval);
+          }
+        }, 1500); // Slightly more frequent checks
+      }
     }
 
     function setVoiceAndSpeak(utterance, useDefaultVoice = false) {
@@ -119,83 +201,8 @@ export function speakText(text, callbacks) {
         }
       }
       
-      // Add callbacks if provided
-      if (callbacks) {
-        // Create wrapped onEnd callback
-        const originalOnEnd = callbacks.onEnd;
-        utterance.onend = (event) => {
-          console.log("Speech synthesis onend event triggered");
-          clearTimeout(timeoutId);
-          safeOnEnd(event);
-        };
-        
-        // Create wrapped onError callback
-        const originalOnError = callbacks.onError;
-        utterance.onerror = (event) => {
-          clearTimeout(timeoutId);
-          console.error('Speech synthesis error:', event);
-          
-          // Provide more detailed error information
-          const errorInfo = {
-            type: event.error || 'unknown',
-            message: 'Speech synthesis failed',
-            originalEvent: event
-          };
-          
-          if (originalOnError) originalOnError(errorInfo);
-          // Always call onEnd on error to ensure UI cleanup
-          safeOnEnd(event);
-        };
-      }
-      
-      // Add safety check before speaking
-      if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
-        window.speechSynthesis.cancel();
-        setTimeout(() => {
-          window.speechSynthesis.speak(utterance);
-        }, 100);
-      } else {
-        window.speechSynthesis.speak(utterance);
-      }
-      
-      // Shorter timeout to prevent hanging speech - max 8 seconds per utterance
-      const timeoutId = setTimeout(() => {
-        if (window.speechSynthesis.speaking) {
-          console.warn('Speech synthesis timeout - cleaning up');
-          window.speechSynthesis.cancel();
-          safeOnEnd();
-        }
-      }, 8000);
-      
-      // Handle Chrome's speech pausing issue with more frequent checks
-      let resumeAttempts = 0;
-      const resumeInterval = setInterval(() => {
-        if (window.speechSynthesis.speaking) {
-          resumeAttempts++;
-          
-          // After too many attempts, just force end the speech
-          if (resumeAttempts > 5) {
-            console.warn("Too many resume attempts, ending speech");
-            clearInterval(resumeInterval);
-            window.speechSynthesis.cancel();
-            safeOnEnd();
-            return;
-          }
-          
-          try {
-            window.speechSynthesis.pause();
-            window.speechSynthesis.resume();
-          } catch (e) {
-            console.error("Error during speech resume:", e);
-          }
-        } else {
-          clearInterval(resumeInterval);
-        }
-      }, 2000); // Check every 2 seconds
-      
-      // Clear interval on end or error
-      utterance.addEventListener('end', () => clearInterval(resumeInterval));
-      utterance.addEventListener('error', () => clearInterval(resumeInterval));
+      // Instead of using the original utterance, start the chunked approach
+      speakNextChunk();
     }
   } catch (error) {
     console.error('Failed to initialize speech synthesis:', error);
