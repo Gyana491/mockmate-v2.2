@@ -49,6 +49,16 @@ export default function InteractionSection({
     }
   }, [currentStage, waitingForUserAction]);
 
+  // Reset local state when question changes
+  useEffect(() => {
+    // When the question index changes, reset any question-specific state
+    setShowHint(false);
+    setTimeLeft(null);
+    setIsButtonHovered(false);
+    setIsRecording(false);
+    setIsProcessing(false);
+  }, [currentQuestionIndex]);
+
   // Handle recording status changes from VoiceRecorder
   const handleRecordingStatusUpdates = (isRec, isProc) => {
     setIsRecording(isRec);

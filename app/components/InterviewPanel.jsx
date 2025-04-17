@@ -132,32 +132,28 @@ export default function InterviewPanel({ skillParam, difficultyParam = "intermed
 
     // Only speak if robotSpeaking state is true, content is available, and not already speaking
     if (robotSpeaking && robotContent && !isRobotSpeaking) {
+      // Cancel any existing speech synthesis before starting a new one
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      
       setIsRobotSpeaking(true); // Mark that synthesis has started
 
       speakText(robotContent, {
         onEnd: () => {
-          console.log("TTS ended for:", robotContent);
-          setIsRobotSpeaking(false); // Mark that synthesis has finished
-          setRobotSpeaking(false); // Update the main state if needed
+          console.log("Speech ended - stage:", currentStage);
+          setIsRobotSpeaking(false); // Mark that synthesis finished normally
+          setRobotSpeaking(false); // Update the main state
 
-          // Transition to waiting for user only after speaking finishes
+          // Continue flow based on current stage
           if (currentStage === "question") {
             setWaitingForUserAction(true);
-          }
-          // If feedback was just given, make continue button visible
-          if (currentStage === "feedback" || currentStage === "intro") {
+          } else if (currentStage === "feedback" || currentStage === "intro") {
             setContinueButtonVisible(true);
-          }
-          // If evaluation was just read
-          if (currentStage === "evaluation") {
-            // Potentially enable buttons or next actions here
           }
         },
         onError: (error) => {
-          // Improved error logging with more details
-          console.error("TTS Error:", error?.type || "unknown error", error?.message || "");
-
-          // Always ensure UI state is properly reset
+          console.error("Speech synthesis error:", error);
           setIsRobotSpeaking(false); // Mark that synthesis finished (due to error)
           setRobotSpeaking(false); // Update the main state
 
@@ -185,7 +181,9 @@ export default function InterviewPanel({ skillParam, difficultyParam = "intermed
       });
     } else if (!robotSpeaking && isRobotSpeaking) {
       // If the main state `robotSpeaking` becomes false while synthesis is active, cancel it
-      window.speechSynthesis.cancel();
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
       setIsRobotSpeaking(false);
     }
   }, [
@@ -196,22 +194,127 @@ export default function InterviewPanel({ skillParam, difficultyParam = "intermed
     evaluation,
     apiError,
     isRobotSpeaking,
-    getRobotSpeechContent, // Added missing dependency
+    getRobotSpeechContent,
   ]);
 
-  // Display the current question
+  // Modify the handleContinue function to clear the input panel when moving to the next question
+  const handleContinue = async () => {
+    // Cancel any existing speech synthesis before continuing
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    setIsRobotSpeaking(false);
+    setRobotSpeaking(false);
+    setContinueButtonVisible(false);
+    
+    if (currentStage === "intro") {
+      // Fetch questions when the user clicks "Start Interview"
+      setContinueButtonVisible(false);
+      setIsLoading(true);
+      try {
+        const questions = await fetchAllQuestions();
+
+        // Check if we have questions and no errors before proceeding
+        if (questions.length > 0 && !apiError) {
+          // Update the question state and move to question stage
+          setCurrentStage("question");
+          setWaitingForUserAction(false);
+          setQuestionFeedback(null);
+          setLiveTranscription("");
+          
+          // The displayCurrentQuestion effect will handle showing the question
+        } else {
+          // If no questions were fetched or there was an error, show error and continue button
+          if (!apiError) {
+            setApiError("Failed to fetch questions. Please try again.");
+          }
+          setContinueButtonVisible(true);
+        }
+      } catch (error) {
+        console.error("Error in handleContinue:", error);
+        setApiError("Failed to start interview. Please try again.");
+        setContinueButtonVisible(true);
+      } finally {
+        setIsLoading(false);
+      }
+    } else if (currentStage === "feedback") {
+      // Check if this was the last question
+      if (currentQuestionIndex + 1 >= totalQuestions) {
+        // Proceed to final evaluation
+        setCurrentStage("evaluation");
+        setIsLoading(true);
+        setApiError(null);
+
+        try {
+          const res = await fetch("/api/evaluation", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              answers: answers,
+              skill: skillName,
+              difficulty: difficultyLevel
+            }),
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            setEvaluation(data);
+            setInterviewCompleted(true);
+            setRobotSpeaking(true); // Trigger TTS for evaluation
+          } else {
+            console.error("Evaluation error:", res.status);
+            setApiError("Failed to generate evaluation. Please try again.");
+            setRobotSpeaking(false);
+          }
+        } catch (error) {
+          console.error("Error generating evaluation:", error);
+          setApiError("Failed to generate evaluation. Please check your connection.");
+          setRobotSpeaking(false);
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        // Move to next question - properly reset everything
+        setCurrentQuestionIndex(prevIndex => prevIndex + 1);
+        setCurrentStage("question");
+        setWaitingForUserAction(false);
+        
+        // Reset the input panel for the new question
+        setLiveTranscription("");
+        setIsAnswerSubmitted(false);
+        setIsAnswerProcessing(false);
+        
+        // Wait a moment before starting the robot speech for the next question
+        setTimeout(() => {
+          setRobotSpeaking(true);
+        }, 100);
+      }
+    }
+  };
+
+  // Modify displayCurrentQuestion to ensure a clean slate for each question
   const displayCurrentQuestion = () => {
     if (allQuestions.length === 0 || currentQuestionIndex >= allQuestions.length) {
       return;
     }
 
+    // Cancel any ongoing speech first
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    setIsRobotSpeaking(false);
+    
+    // Reset all question-related states
     setRobotSpeaking(true);
     setCurrentStage("question");
     setWaitingForUserAction(false);
     setQuestionFeedback(null);
     setContinueButtonVisible(false);
+    
+    // Important: Clear the input for the new question
     setLiveTranscription("");
-    setIsAnswerSubmitted(false); // Reset answer submitted state for new question
+    setIsAnswerSubmitted(false);
+    setIsAnswerProcessing(false);
 
     // Get the current question
     const currentQuestionText = allQuestions[currentQuestionIndex].question;
@@ -222,15 +325,9 @@ export default function InterviewPanel({ skillParam, difficultyParam = "intermed
       ...prev,
       { type: "question", content: currentQuestionText, index: currentQuestionIndex + 1 },
     ]);
-
-    // Calculate speaking duration based on question length for natural feel
-    const speakingDuration = Math.max(4000, currentQuestionText.length * 50);
-
-    // Set robotSpeaking to true to trigger the useEffect hook for TTS
-    setRobotSpeaking(true);
   };
 
-  // When current question index changes, display the new question
+  // Ensure we properly refresh the UI when currentQuestionIndex changes
   useEffect(() => {
     if (
       currentStage === "question" &&
@@ -239,13 +336,77 @@ export default function InterviewPanel({ skillParam, difficultyParam = "intermed
     ) {
       displayCurrentQuestion();
     }
-  }, [currentQuestionIndex, currentStage, allQuestions, displayCurrentQuestion]); // Now correctly includes displayCurrentQuestion
+  }, [currentQuestionIndex, allQuestions]); // Respond to question index changes
+  
+  // Add this effect to ensure user controls are properly reset for each question
+  useEffect(() => {
+    if (currentStage === "question" && !waitingForUserAction && !isRobotSpeaking) {
+      // Safety timer to ensure user controls appear if speech ends without triggering onEnd
+      const safetyTimer = setTimeout(() => {
+        setWaitingForUserAction(true);
+      }, 8000); // 8 seconds should be enough for most question readings
+      
+      return () => clearTimeout(safetyTimer);
+    }
+  }, [currentStage, waitingForUserAction, isRobotSpeaking]);
 
+  // Fix the displayCurrentQuestion function to prevent repeated questions
+  const displayCurrentQuestionEffect = useEffect(() => {
+    if (currentStage === "question" && 
+        allQuestions.length > 0 && 
+        currentQuestionIndex < allQuestions.length) {
+      
+      // Cancel any ongoing speech first
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      setIsRobotSpeaking(false);
+      
+      // Get the current question
+      const currentQuestionText = allQuestions[currentQuestionIndex].question;
+      setQuestion(currentQuestionText);
+      
+      // Add this question to the interview history only if it's not already the last item
+      setInterviewHistory((prev) => {
+        const lastItem = prev[prev.length - 1];
+        if (lastItem?.type !== "question" || lastItem?.index !== currentQuestionIndex + 1) {
+          return [...prev, { 
+            type: "question", 
+            content: currentQuestionText, 
+            index: currentQuestionIndex + 1 
+          }];
+        }
+        return prev;
+      });
+      
+      // Set robot speaking to true to trigger the useEffect hook for TTS
+      setRobotSpeaking(true);
+      
+      // Safety timeout to ensure user controls appear if speech fails to end properly
+      const fallbackTimer = setTimeout(() => {
+        if (!waitingForUserAction) {
+          console.log("Fallback timer activated - enabling user controls");
+          setWaitingForUserAction(true);
+        }
+      }, 10000); // 10 second fallback
+      
+      return () => clearTimeout(fallbackTimer);
+    }
+  }, [currentStage, currentQuestionIndex, allQuestions, waitingForUserAction]);
+
+  // Modify handleAnswer to prevent duplicate answers
   const handleAnswer = async (transcribedText) => {
-    setLiveTranscription(transcribedText);
+    // Only update if we're waiting for user action
+    if (waitingForUserAction) {
+      setLiveTranscription(transcribedText);
+    }
   };
 
+  // Modify submit answer to prevent repeated submissions
   const handleSubmitAnswer = async () => {
+    // Prevent multiple submissions
+    if (isAnswerProcessing) return;
+    
     // Check for empty input and set a default message if necessary
     if (!liveTranscription || liveTranscription.trim() === '') {
       setLiveTranscription("I don't have an answer for this question.");
@@ -258,7 +419,9 @@ export default function InterviewPanel({ skillParam, difficultyParam = "intermed
     setIsAnswerProcessing(true);
 
     // Cancel any ongoing speech synthesis before processing answer
-    window.speechSynthesis.cancel();
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
     setIsRobotSpeaking(false);
     setRobotSpeaking(false);
 
@@ -266,6 +429,7 @@ export default function InterviewPanel({ skillParam, difficultyParam = "intermed
     setContinueButtonVisible(false);
     setIsLoading(true);
     setApiError(null);
+    setWaitingForUserAction(false);
     
     // Add a message to show processing state
     setInterviewHistory((prev) => [...prev, { 
@@ -275,7 +439,6 @@ export default function InterviewPanel({ skillParam, difficultyParam = "intermed
     }]);
 
     // Add this answer to the interview history
-    // Use the normalized/default answer if input was empty
     const finalAnswer = liveTranscription.trim() === '' 
       ? "I don't have an answer for this question." 
       : liveTranscription;
@@ -290,7 +453,6 @@ export default function InterviewPanel({ skillParam, difficultyParam = "intermed
 
     // Generate feedback for this specific question/answer
     try {
-      // Get individual question feedback
       const feedbackRes = await fetch("/api/question-feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -324,98 +486,11 @@ export default function InterviewPanel({ skillParam, difficultyParam = "intermed
     }
   };
 
-  const handleContinue = async () => {
-    window.speechSynthesis.cancel();
-    setIsRobotSpeaking(false);
-    setRobotSpeaking(false);
-    setContinueButtonVisible(false);
-    if (currentStage === "intro") {
-      // Fetch questions when the user clicks "Start Interview"
-      setContinueButtonVisible(false);
-      setIsLoading(true);
-      try {
-        const questions = await fetchAllQuestions();
-
-        // Check if we have questions and no errors before proceeding
-        if (questions.length > 0 && !apiError) {
-          // Update the question state but don't add to history yet (displayCurrentQuestion will do that)
-          const currentQuestionText = questions[currentQuestionIndex]?.question;
-          if (currentQuestionText) {
-            setQuestion(currentQuestionText);
-            setCurrentStage("question");
-            setWaitingForUserAction(false);
-            setQuestionFeedback(null);
-            setLiveTranscription("");
-            
-            // Don't add to interview history here - will be handled by displayCurrentQuestion
-            
-            setTimeout(() => {
-              setRobotSpeaking(true); // Trigger TTS only after question is set
-            }, 100); // Small delay to ensure state is updated
-          }
-        } else {
-          // If no questions were fetched or there was an error, show error and continue button
-          if (!apiError) {
-            setApiError("Failed to fetch questions. Please try again.");
-          }
-          setContinueButtonVisible(true);
-        }
-      } catch (error) {
-        console.error("Error in handleContinue:", error);
-        setApiError("Failed to start interview. Please try again.");
-        setContinueButtonVisible(true);
-      } finally {
-        setIsLoading(false);
-      }
-
-      return;
-    } else if (currentStage === "feedback") {
-      // Check if this was the last question
-      if (currentQuestionIndex + 1 >= totalQuestions) {
-        // Proceed to final evaluation
-        setCurrentStage("evaluation");
-        setIsLoading(true);
-        setApiError(null);
-
-        try {
-          const res = await fetch("/api/evaluation", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              answers: answers,
-              skill: skillName,
-              difficulty: difficultyLevel
-            }),
-          });
-
-          if (res.ok) {
-            const data = await res.json();
-            setEvaluation(data);
-            setInterviewCompleted(true);
-            setRobotSpeaking(true); // Trigger TTS for evaluation *after* getting it
-          } else {
-            console.error("Evaluation error:", res.status);
-            setApiError("Failed to generate evaluation. Please try again.");
-            setRobotSpeaking(false); // Ensure robot isn't stuck speaking on error
-          }
-        } catch (error) {
-          console.error("Error generating evaluation:", error);
-          setApiError("Failed to generate evaluation. Please check your connection.");
-          setRobotSpeaking(false); // Ensure robot isn't stuck speaking on error
-        } finally {
-          setIsLoading(false);
-        }
-      } else {
-        // Move to next question
-        setCurrentQuestionIndex(currentQuestionIndex + 1);
-        setCurrentStage("question");
-      }
-    }
-  };
-
   const handleSkipQuestion = () => {
     // Cancel any ongoing speech synthesis before skipping
-    window.speechSynthesis.cancel();
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
     setIsRobotSpeaking(false);
     setRobotSpeaking(false);
 
@@ -451,7 +526,9 @@ export default function InterviewPanel({ skillParam, difficultyParam = "intermed
 
   const handleStartNewInterview = () => {
     // Cancel any ongoing speech synthesis
-    window.speechSynthesis.cancel();
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
     setIsRobotSpeaking(false);
 
     setInterviewCompleted(false);
@@ -467,14 +544,12 @@ export default function InterviewPanel({ skillParam, difficultyParam = "intermed
 
     // Don't trigger TTS automatically, just make continue button visible
     setContinueButtonVisible(true);
-    // Remove: setRobotSpeaking(true);
   };
 
   // Initialize the interview when component mounts
   useEffect(() => {
     // Don't auto-trigger speech on mount, just set the state and show continue button
     if (currentStage === "intro") {
-      // Do NOT set robotSpeaking true here - wait for user interaction
       setContinueButtonVisible(true); // Make the start button visible immediately
     }
   }, [currentStage]); // Now correctly includes currentStage
@@ -648,7 +723,7 @@ export default function InterviewPanel({ skillParam, difficultyParam = "intermed
                     ) : (
                       <span className="flex items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
                         </svg>
                         Submit
                       </span>

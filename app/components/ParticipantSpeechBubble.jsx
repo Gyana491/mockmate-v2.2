@@ -43,6 +43,14 @@ export default function ParticipantSpeechBubble({
     }
   }, [editedContent, isEditable]);
 
+  // If this is a component remount (new question), ensure the content is fresh
+  useEffect(() => {
+    // Reset any internal state that affects the display of content
+    if (contentRef.current && isEditable) {
+      contentRef.current.value = content || '';
+    }
+  }, [content, isEditable]);
+
   return (
     <div 
       className={`

@@ -4,18 +4,19 @@
 export function speakText(text, callbacks) {
   console.log('Initializing speech synthesis for text:', text);
 
+  // Guard against empty text
+  if (!text || text.trim() === '') {
+    console.log("Empty text provided to speech synthesis, skipping");
+    if (callbacks && callbacks.onEnd) {
+      setTimeout(() => callbacks.onEnd(), 0);
+    }
+    return;
+  }
+
   // Check if running in browser environment
   if (typeof window === 'undefined') {
     console.error('Speech Synthesis is only available in client-side environments');
     if (callbacks && callbacks.onError) callbacks.onError({error: 'client-side-only'});
-    if (callbacks && callbacks.onEnd) callbacks.onEnd();
-    return;
-  }
-  
-  // Ensure text is not empty
-  if (!text || typeof text !== 'string' || text.trim() === '') {
-    console.error('Invalid text provided for speech synthesis.');
-    if (callbacks && callbacks.onError) callbacks.onError({error: 'invalid-text'});
     if (callbacks && callbacks.onEnd) callbacks.onEnd();
     return;
   }
@@ -29,6 +30,16 @@ export function speakText(text, callbacks) {
   
   // Cancel any ongoing speech
   window.speechSynthesis.cancel();
+  
+  // Track if onEnd has been called to prevent multiple calls
+  let onEndCalled = false;
+  
+  const safeOnEnd = (event) => {
+    if (!onEndCalled && callbacks && callbacks.onEnd) {
+      onEndCalled = true;
+      callbacks.onEnd(event);
+    }
+  };
   
   // Safety check - if speech is blocked, use a user interaction
   try {
@@ -51,122 +62,150 @@ export function speakText(text, callbacks) {
         voicesAttempts++;
         
         if (voices.length > 0) {
-          // Set voice and speak once voices are loaded
           setVoiceAndSpeak(utterance);
-          // Remove the event listener
-          window.speechSynthesis.onvoiceschanged = null;
+          window.speechSynthesis.removeEventListener('voiceschanged', voicesLoadedCallback);
         } else if (voicesAttempts >= maxVoiceAttempts) {
-          // After several attempts, try without specific voice
-          console.warn('Failed to load voices after multiple attempts. Using default voice.');
+          // If we tried several times with no luck, use default voice
+          console.warn('Could not load voices after multiple attempts, using default voice');
           setVoiceAndSpeak(utterance, true);
-          window.speechSynthesis.onvoiceschanged = null;
+          window.speechSynthesis.removeEventListener('voiceschanged', voicesLoadedCallback);
         }
       };
       
-      window.speechSynthesis.onvoiceschanged = voicesLoadedCallback;
-      // Try to load voices
-      window.speechSynthesis.getVoices();
+      window.speechSynthesis.addEventListener('voiceschanged', voicesLoadedCallback);
       
-      // Set a fallback timeout in case onvoiceschanged never fires
-      setTimeout(() => {
-        if (voices.length === 0) {
-          console.warn('Voice loading timed out. Using default voice.');
-          setVoiceAndSpeak(utterance, true);
-          window.speechSynthesis.onvoiceschanged = null;
-        }
-      }, 3000);
-      
-      return;
+      // Trigger the callback once manually in case the event doesn't fire
+      voicesLoadedCallback();
+    } else {
+      setVoiceAndSpeak(utterance);
     }
-    
-    // If voices are already available, speak right away
-    setVoiceAndSpeak(utterance);
-  } catch (error) {
-    console.error('Unexpected error initializing speech synthesis:', error);
-    if (callbacks && callbacks.onError) callbacks.onError({error: 'initialization-error'});
-    if (callbacks && callbacks.onEnd) callbacks.onEnd();
-  }
-  
-  function setVoiceAndSpeak(utterance, useDefaultVoice = false) {
-    try {
+
+    function setVoiceAndSpeak(utterance, useDefaultVoice = false) {
       if (!useDefaultVoice) {
-        // Find a good English voice, preferably Google or Microsoft
+        // Try to find a good voice
         const voices = window.speechSynthesis.getVoices();
-        const preferredVoice = voices.find(voice => 
-          (voice.name.includes('Google') || voice.name.includes('Microsoft')) && 
-          voice.lang.startsWith('en')
-        ) || voices.find(voice => voice.lang.startsWith('en-')) || voices[0];
+        let voice = null;
         
-        if (preferredVoice) {
-          utterance.voice = preferredVoice;
-          console.log('Using voice:', preferredVoice.name);
+        // Try to find these voices in order of preference
+        const preferredVoices = [
+          { name: 'Google US English', lang: 'en-US' },
+          { name: 'Microsoft David', lang: 'en-US' },
+          { name: 'Microsoft Mark', lang: 'en-US' },
+          { name: 'Microsoft Zira', lang: 'en-US' },
+          { name: 'Alex', lang: 'en-US' }
+        ];
+        
+        for (const preferred of preferredVoices) {
+          voice = voices.find(v => 
+            v.name === preferred.name && 
+            v.lang.startsWith(preferred.lang)
+          );
+          if (voice) break;
+        }
+        
+        // If we couldn't find a preferred voice, try any English US voice
+        if (!voice) {
+          voice = voices.find(v => v.lang.startsWith('en-US'));
+        }
+        
+        // If we still couldn't find a voice, try any English voice
+        if (!voice) {
+          voice = voices.find(v => v.lang.startsWith('en'));
+        }
+        
+        // If we found a suitable voice, use it
+        if (voice) {
+          utterance.voice = voice;
         }
       }
       
-      // Set callbacks before speaking
+      // Add callbacks if provided
       if (callbacks) {
-        if (typeof callbacks === 'function') {
-          utterance.onend = callbacks;
-        } else {
-          if (callbacks.onStart) utterance.onstart = callbacks.onStart;
+        // Create wrapped onEnd callback
+        const originalOnEnd = callbacks.onEnd;
+        utterance.onend = (event) => {
+          console.log("Speech synthesis onend event triggered");
+          clearTimeout(timeoutId);
+          safeOnEnd(event);
+        };
+        
+        // Create wrapped onError callback
+        const originalOnError = callbacks.onError;
+        utterance.onerror = (event) => {
+          clearTimeout(timeoutId);
+          console.error('Speech synthesis error:', event);
           
-          // Create wrapped onEnd callback
-          const originalOnEnd = callbacks.onEnd;
-          utterance.onend = (event) => {
-            clearTimeout(timeoutId);
-            if (originalOnEnd) originalOnEnd(event);
+          // Provide more detailed error information
+          const errorInfo = {
+            type: event.error || 'unknown',
+            message: 'Speech synthesis failed',
+            originalEvent: event
           };
           
-          // Create wrapped onError callback
-          const originalOnError = callbacks.onError;
-          utterance.onerror = (event) => {
-            clearTimeout(timeoutId);
-            console.error('Speech synthesis error:', event);
-            
-            // Provide more detailed error information
-            const errorInfo = {
-              type: event.error || 'unknown',
-              message: 'Speech synthesis failed',
-              originalEvent: event
-            };
-            
-            if (originalOnError) originalOnError(errorInfo);
-            // Always call onEnd on error to ensure UI cleanup
-            if (callbacks.onEnd) callbacks.onEnd(event);
-          };
-        }
+          if (originalOnError) originalOnError(errorInfo);
+          // Always call onEnd on error to ensure UI cleanup
+          safeOnEnd(event);
+        };
       }
       
-      // Failsafe timeout - prevent speech from running too long
+      // Add safety check before speaking
+      if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+        window.speechSynthesis.cancel();
+        setTimeout(() => {
+          window.speechSynthesis.speak(utterance);
+        }, 100);
+      } else {
+        window.speechSynthesis.speak(utterance);
+      }
+      
+      // Shorter timeout to prevent hanging speech - max 8 seconds per utterance
       const timeoutId = setTimeout(() => {
         if (window.speechSynthesis.speaking) {
           console.warn('Speech synthesis timeout - cleaning up');
           window.speechSynthesis.cancel();
-          if (callbacks && callbacks.onEnd) callbacks.onEnd();
+          safeOnEnd();
         }
-      }, 30000); // 30 seconds should be enough for any reasonable speech
+      }, 8000);
       
-      // Speak the text
-      window.speechSynthesis.speak(utterance);
-      
-      // Chrome sometimes pauses after ~15 seconds
-      // Keep speech synthesis active with periodic resume calls
+      // Handle Chrome's speech pausing issue with more frequent checks
+      let resumeAttempts = 0;
       const resumeInterval = setInterval(() => {
         if (window.speechSynthesis.speaking) {
-          window.speechSynthesis.pause();
-          window.speechSynthesis.resume();
+          resumeAttempts++;
+          
+          // After too many attempts, just force end the speech
+          if (resumeAttempts > 5) {
+            console.warn("Too many resume attempts, ending speech");
+            clearInterval(resumeInterval);
+            window.speechSynthesis.cancel();
+            safeOnEnd();
+            return;
+          }
+          
+          try {
+            window.speechSynthesis.pause();
+            window.speechSynthesis.resume();
+          } catch (e) {
+            console.error("Error during speech resume:", e);
+          }
         } else {
           clearInterval(resumeInterval);
         }
-      }, 10000);
+      }, 2000); // Check every 2 seconds
       
       // Clear interval on end or error
       utterance.addEventListener('end', () => clearInterval(resumeInterval));
       utterance.addEventListener('error', () => clearInterval(resumeInterval));
-    } catch (error) {
-      console.error('Error setting voice or speaking:', error);
-      if (callbacks && callbacks.onError) callbacks.onError({error: 'speak-error'});
-      if (callbacks && callbacks.onEnd) callbacks.onEnd();
     }
+  } catch (error) {
+    console.error('Failed to initialize speech synthesis:', error);
+    if (callbacks && callbacks.onError) {
+      callbacks.onError({
+        type: 'initialization-error',
+        message: 'Failed to initialize speech synthesis',
+        originalError: error
+      });
+    }
+    safeOnEnd();
   }
 }

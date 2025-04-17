@@ -26,6 +26,7 @@ export default function VoiceRecorder({
   const recognitionRef = useRef(null);
   const recordingTimerRef = useRef(null);
   const tooltipTimeoutRef = useRef(null);
+  const prevDisabled = useRef(disabled);
 
   // Set up visualizer animation
   const setupAudioVisualizer = async (stream) => {
@@ -143,6 +144,22 @@ export default function VoiceRecorder({
         }
       };
     }
+  }, [disabled]);
+
+  useEffect(() => {
+    // Reset the voice recorder when disabled state changes to enabled
+    if (!disabled && prevDisabled.current) {
+      console.log("VoiceRecorder reset for new question");
+      setIsRecording(false);
+      setIsProcessing(false);
+      setRecordingDuration(0);
+      setInterimTranscript('');
+      finalTranscriptRef.current = '';
+      stopRecordingTimer();
+      cleanupAudioVisualizer();
+    }
+    
+    prevDisabled.current = disabled;
   }, [disabled]);
 
   const requestMicrophonePermission = async () => {
