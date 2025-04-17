@@ -384,87 +384,91 @@ export default function Home() {
 
         {/* Interview Categories Section */}
         <section className="mb-16" aria-labelledby="categories-title">
-          <h2 
-            id="categories-title"
-            className="text-2xl font-bold text-gray-800 dark:text-white mb-6 text-center"
-          >
-            Choose Your Interview Type
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {categories.map((category) => (
-              <motion.div
-                key={category.name}
-                className={`p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl border-2 transition-all duration-300 ${
-                  activeCategory?.name === category.name 
-                    ? "border-blue-500 dark:border-blue-400" 
-                    : "border-gray-200 dark:border-gray-700"
-                }`}
-                whileHover={{ y: -5 }}
-              >
-                <div className="text-4xl mb-4">
-                  {category.icon}
-                </div>
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">
-                  {category.name}
-                </h3>
-                <p className="text-gray-600 dark:text-gray-300 mb-4">
-                  {category.description}
-                </p>
-                <button 
-                  onClick={() => handleCategorySelect(category)}
-                  className={`w-full px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
-                    activeCategory?.name === category.name
-                      ? "bg-blue-600 text-white hover:bg-blue-700"
-                      : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+          <div className="max-w-4xl mx-auto">
+            <h2 
+              id="categories-title"
+              className="text-2xl font-bold text-gray-800 dark:text-white mb-6 text-center"
+            >
+              Choose Your Interview Type
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {categories.map((category) => (
+                <motion.div
+                  key={category.name}
+                  className={`p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl border-2 transition-all duration-300 ${
+                    activeCategory?.name === category.name 
+                      ? "border-blue-500 dark:border-blue-400" 
+                      : "border-gray-200 dark:border-gray-700"
                   }`}
+                  whileHover={{ y: -5 }}
                 >
-                  Start Practice
-                </button>
-              </motion.div>
-            ))}
+                  <div className="text-4xl mb-4">
+                    {category.icon}
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">
+                    {category.name}
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-300 mb-4">
+                    {category.description}
+                  </p>
+                  <button 
+                    onClick={() => handleCategorySelect(category)}
+                    className={`w-full px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
+                      activeCategory?.name === category.name
+                        ? "bg-blue-600 text-white hover:bg-blue-700"
+                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                    }`}
+                  >
+                    Start Practice
+                  </button>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </section>
 
 
         {/* How It Works Section */}
         <section className="text-center mb-12" aria-labelledby="workflow-title">
-          <h2 
-            id="workflow-title"
-            className="text-2xl font-bold text-gray-800 dark:text-white mb-8"
-          >
-            How It Works
-          </h2>
-          <div className="flex flex-col md:flex-row justify-center items-stretch gap-8">
-            {workflowSteps.map((step, index) => (
-              <motion.div
-                key={step.title}
-                className="flex-1 max-w-xs"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.2 }}
-              >
-                <motion.button
-                  onClick={step.action}
-                  className="w-full h-full p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col items-center"
-                  whileHover={{ y: -5 }}
-                  whileTap={{ scale: 0.98 }}
+          <div className="max-w-4xl mx-auto px-2">
+            <h2 
+              id="workflow-title"
+              className="text-2xl font-bold text-gray-800 dark:text-white mb-8"
+            >
+              How It Works
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {workflowSteps.map((step, index) => (
+                <motion.div
+                  key={step.title}
+                  className="w-full"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.2 }}
                 >
-                  <div className="text-4xl mb-4 animate-bounce">{step.icon}</div>
-                  <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">
-                    {step.title}
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-300">
-                    {step.description}
-                  </p>
-                  <div className="mt-4 text-blue-600 dark:text-blue-400 text-sm font-medium flex items-center gap-1">
-                    Try it now
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </motion.button>
-              </motion.div>
-            ))}
+                  <motion.button
+                    onClick={step.action}
+                    className="w-full h-full p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col items-center"
+                    whileHover={{ y: -5 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="text-4xl mb-4 animate-bounce">{step.icon}</div>
+                    <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">
+                      {step.title}
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-300">
+                      {step.description}
+                    </p>
+                    <div className="mt-4 text-blue-600 dark:text-blue-400 text-sm font-medium flex items-center gap-1">
+                      Try it now
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </motion.button>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </section>
       </div>
