@@ -1,6 +1,18 @@
 # MockMate - AI-Powered Technical Interview Practice
 
-MockMate is an interactive technical interview practice platform powered by AI that helps developers prepare for technical interviews through realistic conversation-based practice sessions.
+MockMate is an interactive technical interview practice platform powered by AI that helps developers prepare for technical interviews through realistic conversation-based practice sessions.Sharpen your interview skills, prepare with AI-powered practice. and Evaluate  your skills
+Any Skill, Any Difficulty
+
+Please Give It a try:
+[https://mock-mate-v2.netlify.app/](https://https://mock-mate-v2.netlify.app/)
+Completely free, no login required
+
+(Use your desktop with a headphone for better experience)
+
+By: Team CodeMonk
+
+![1744881748278](images/README/1744881748278.png)
+
 
 ## Features
 
@@ -23,8 +35,8 @@ MockMate is an interactive technical interview practice platform powered by AI t
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/your-username/mockmate.git
-cd mockmate
+git clone https://github.com/Gyana491/mockmate-v2.2
+cd mockmate-v2.2
 ```
 
 2. Install dependencies:
